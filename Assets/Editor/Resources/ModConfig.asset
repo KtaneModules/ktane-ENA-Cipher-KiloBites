@@ -14,7 +14,10 @@ MonoBehaviour:
   id: enaCipher
   title: "\u018ENA Cipher"
   author: Kilo Bites
-  description: Decode a word that was encoded with patterns and 3 different ciphers.
+  description: 'Nice weather! What conspiracies are we cooking on the menu today?
+
+
+    Decode a word that was encoded with patterns and 3 different ciphers.'
   version: 1.0
   outputFolder: build
-  previewImage: {fileID: 0}
+  previewImage: {fileID: 2800000, guid: 471379bd6f82e9348b40f7af8f870a8c, type: 3}
