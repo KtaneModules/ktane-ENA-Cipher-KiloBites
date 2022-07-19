@@ -16,7 +16,6 @@
         td.enablue { background-color: #3162f7; }
         td.enayellow { background-color: #fee600; }
         .tablecenter td { text-align: center; padding: 0;}
-        .tablecenter th { padding: 0.1 em; }
         p.center { text-align:center; }
     </style>
 </head>
@@ -158,7 +157,7 @@
                     </tr>
                 </table>
                 <table>
-                    <tr>
+                    <tr style="height: 27px;">
                         <td class="enablue"></td>
                         <td class="enayellow"></td>
                         <td class="enablue"></td>
@@ -166,7 +165,7 @@
                         <td class="enayellow"></td>
                         <td class="enablue"></td>
                     </tr>
-                    <tr>
+                    <tr style="height: 27px;">
                         <td class="enayellow"></td>
                         <td class="enablue"></td>
                         <td class="enablue"></td>
@@ -174,7 +173,7 @@
                         <td class="enablue"></td>
                         <td class="enablue"></td>
                     </tr>
-                    <tr>
+                    <tr style="height: 27px;">
                         <td class="enablue"></td>
                         <td class="enayellow"></td>
                         <td class="enablue"></td>
@@ -192,10 +191,11 @@
                     </tr>
                 </table>
                 <h3>Step 1: Arithmetic Sequence Cipher</h3> 
-                <p>Take the encrypted word from display 1, and keyword decrypted from display 2. Remove any duplicate letters while keeping the 1st occurance. Take the entire alphabet and remove all the letters shown in the keyword.</p>
+                <p>Take the encrypted word from display 1, and keyword decrypted from display 2. Remove any duplicate letters in the keyword while keeping the 1st occurrence. Take the entire alphabet and remove all the letters shown in the keyword.</p>
                 <p>If the serial number contains a letter in "ENA", put the alphabet at the end of the keyword. Otherwise, put the alphabet in front of the keyword. This will be the Arithmetic Sequence key.</p>
             </div>
             <div class="page-footer relative-footer">Page 1 of 4</div>
+            </div>
         </div>
         <div class="page page-bg-02">
             <div class="page-header">
@@ -245,17 +245,15 @@
             </div>
             <div class="page-content">
                 <h3>Step 3: Temptation Stairway Cipher</h3>
-                <p>Take the new encrypted word from step 2 and the keyword decrypted from the display 4, replacing any Js with Is, and remove any duplicate letters while keeping the 1st occurance. Take the entire alphabet, omitting J and remove all the letters shown in the keyword.</p>
+                <p>Take the new encrypted word from step 2 and the keyword decrypted from the display 4, replacing any Js with Is, and remove any duplicate letters in the keyword while keeping the 1st occurrence. Take the entire alphabet, omitting J and remove all the letters shown in the keyword.</p>
                 <p>However, if encrypted word contains any Js, replace each J with the letter in the same position as the substitution string in display 5.
                 <p>If the number of ports is odd and the number of port plates is even, put the alphabet at the end of the keyword. Otherwise, put the alphabet in front of the keyword.</p>
                 <p>Once you have the 25 length string, create a 5×5 matrix of letters.</p>
                 <p>Split the encrypted word into triplets.</p>
-                <p>Determine how many columns are associated with the letters in each triplet.</p>
+                <p>For each triplet, use only the columns of your matrix containing a letter of your triplet, or any columns in between.</p>
                 <ul>
-                <li>If the column count is only one, stay in place.</li>
-                <li>If the column count is 2, swap the letters with its adjacent.</li>
-                <li>If the column count is 3 or 5, go left from the letter to obtain a new letter, wrapping around if necessary.</li>
-                <li>For 4 columns: If the letter's position in the matrix is 1 or 4, swap the letters from those positions. Otherwise, swap the letters with its adjacent.</li>
+                <li>If all letters are in the same column, do nothing.</li>
+                <li>Mirror each letter horizontally across the middle of the column group.</li>
                 </ul>
                 <h4 style="text-align:center">Example</h4>
                 <p class="center">
@@ -291,7 +289,7 @@
             <p>Once you finally have your decrypted word, press the start button to go into submission mode to type out your word.</p>
             <p>To clear it, click on the backspace key. It will not let you go over 6 letters on input.</p>
             <p>If at any point you want to go back to the main window, click on the X on the top right corner of the window.</p>
-            <p>Once you are satisfied with your input, press the button labeled "SUB" to submit your answer. On a strike, the module will go back to the first window after the blue screen, but will not regenerate entirely.</p>
+            <p>Once you are satisfied with your input, press the button labeled "SUB" to submit your answer. On a strike, the module will go back to the main window after the blue screen, but will not regenerate entirely.</p>
     </div>
     <div class="page-footer relative-footer">Page 4 of 4</div>
     </div>
