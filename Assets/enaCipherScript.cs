@@ -49,6 +49,8 @@ public class enaCipherScript : MonoBehaviour {
 
 	private bool cbActive = false;
 
+	private bool lessTime;
+
 	private string getKey(string kw, string alphabet, bool kwFirst)
     {
 		return (kwFirst ? (kw + alphabet) : alphabet.Except(kw).Concat(kw)).Distinct().Join("");
@@ -379,6 +381,13 @@ public class enaCipherScript : MonoBehaviour {
 		int loop = 0;
 		int pattern = 0;
 		Audio.PlaySoundAtTransform("Solve", transform);
+
+		if (Bomb.GetTime() < 30)
+        {
+			lessTime = true;
+			Bomb.GetComponent<KMBombModule>().HandlePass();
+        }
+
 		for (int i = 0; i < solveText.Length; i++)
         {
 			submissionDisplayText.text += solveText[i];
@@ -422,7 +431,11 @@ public class enaCipherScript : MonoBehaviour {
 		screen.material = biosBootupScreenStuff[1];
 		yield return new WaitForSeconds(0.8f);
 		screen.material = biosBootupScreenStuff[0];
-		Module.GetComponent<KMBombModule>().HandlePass();
+		if (!lessTime)
+        {
+			Module.GetComponent<KMBombModule>().HandlePass();
+		}
+
 
     }
 
