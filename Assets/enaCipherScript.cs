@@ -866,7 +866,7 @@ public class enaCipherScript : MonoBehaviour {
 	// Twitch Plays
 
 #pragma warning disable 414
-	private readonly string TwitchHelpMessage = @"!{0} submit [insert answer here] to input your decrypted word.";
+	private readonly string TwitchHelpMessage = @"!{0} submit [insert answer here] to input your decrypted word. || cb to enable colorblind mode.";
 #pragma warning restore 414
 
 	private int getCharIndex(char c)
