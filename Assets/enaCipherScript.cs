@@ -121,7 +121,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 		string currentMessage = word;
 
-		Debug.LogFormat("[ƎNA Cipher #{0}] Temptation Stairwar Key: {1}", moduleId, key1);
+		Debug.LogFormat("[ƎNA Cipher #{0}] Temptation Stairway Key: {1}", moduleId, key1);
 		Debug.LogFormat("[ƎNA Cipher #{0}] Beginning Temptation Stairway Encryption", moduleId);
 
 		currentMessage = encryptTemptationStairway(key1, currentMessage);
