@@ -149,7 +149,7 @@ public class enaCipherScript : MonoBehaviour {
 		Debug.LogFormat("[ƎNA Cipher #{0}] After encrypting with Extinction Transposition: {1}", moduleId, currentMessage);
 
 		Debug.LogFormat("[ƎNA Cipher #{0}] Arithmetic Sequence Key: {1}", moduleId, key2);
-		Debug.LogFormat("[ƎNA Cipher #{0}] Beginning Arithmetic Transposition Encryption", moduleId);
+		Debug.LogFormat("[ƎNA Cipher #{0}] Beginning Arithmetic Sequence Encryption", moduleId);
 		currentMessage = encryptArithmeticSequence(currentMessage, key2);
 		
 		Debug.LogFormat("[ƎNA Cipher #{0}] After encrypting with Arithmetic Sequence Cipher: {1}", moduleId, currentMessage);
