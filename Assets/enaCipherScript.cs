@@ -890,8 +890,15 @@ public class enaCipherScript : MonoBehaviour {
 			yield break;
 		}
 
+
 		if (split.Length != 2 || !split[0].EqualsIgnoreCase("SUBMIT"))
         {
+			yield break;
+        }
+
+		if (!isActivated)
+        {
+			yield return "sendtochaterror OS is still booting. Please stand by before submitting anything.";
 			yield break;
         }
 
