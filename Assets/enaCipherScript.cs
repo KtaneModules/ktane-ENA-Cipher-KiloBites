@@ -442,6 +442,7 @@ public class enaCipherScript : MonoBehaviour {
 	IEnumerator strikeAnimation()
     {
 		yield return null;
+		submission = false;
 		Audio.PlaySoundAtTransform("Strike", transform);
 		submissionDisplayText.text = "";
 		submissionWindow.SetActive(false);
@@ -456,7 +457,6 @@ public class enaCipherScript : MonoBehaviour {
 		window.SetActive(true);
 		taskBar.SetActive(true);
 		yield return new WaitForSeconds(1);
-		submission = false;
 		StartCoroutine(flashingEncryptedSequence());
 		StartCoroutine(flashingArithmeticKWSequence());
 		StartCoroutine(flashingExtinctionSequence());
