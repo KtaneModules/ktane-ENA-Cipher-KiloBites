@@ -7,6 +7,7 @@ using KModkit;
 using Words;
 using rnd = UnityEngine.Random;
 using UnityEngine.Video;
+using KeepCoding;
 
 public class enaCipherScript : MonoBehaviour {
 
@@ -61,8 +62,6 @@ public class enaCipherScript : MonoBehaviour {
 	private bool lessTime;
 
 	private bool specialSolve;
-
-	private bool useInternal;
 
 	private string getKey(string kw, string alphabet, bool kwFirst)
     {
@@ -337,10 +336,6 @@ public class enaCipherScript : MonoBehaviour {
 		reset.OnInteract += delegate () { resetPress(); return false; };
 		cbActive = Colorblind.ColorblindModeActive;
 
-		if (Application.isEditor)
-		{
-			useInternal = true;
-		}
 
 	}
 
@@ -360,27 +355,18 @@ public class enaCipherScript : MonoBehaviour {
 			specialSolve = true;
 		}
 
-		if (!useInternal)
+		if (!Application.isEditor)
 		{
-            specialSolveOut.clip = VideoLoader.clips[0];
-            StartCoroutine(waitForClip());
+			specialClip = PathManager.GetAssets<VideoClip>("ena").Single();
 		}
-		else
-		{
-			specialSolveOut.clip = specialClip;
-            StartCoroutine(startingScreen());
-        }
 
-		wordGenerate();
-    }
-
-	IEnumerator waitForClip()
-	{
-		yield return new WaitUntil(() => VideoLoader.clips != null);
-		
+		specialSolveOut.clip = specialClip;
+		specialSolveOut.Prepare();
 
         StartCoroutine(startingScreen());
+        wordGenerate();
     }
+
 
 	void speedButtonPress(KMSelectable arrow)
 	{
