@@ -6,6 +6,7 @@ using UnityEngine;
 using KModkit;
 using Words;
 using rnd = UnityEngine.Random;
+using UnityEngine.Video;
 
 public class enaCipherScript : MonoBehaviour {
 
@@ -20,23 +21,31 @@ public class enaCipherScript : MonoBehaviour {
 	public Material startupScreen, backgroundScreen;
 	public GameObject biosStuff, startupStuff;
 	public GameObject[] loadingBars;
+	public GameObject specialWindow;
 	public MeshRenderer screen;
 	public GameObject taskBar;
 	public GameObject window;
 	public GameObject submissionWindow;
 	public GameObject blueScreenMessage;
 	public GameObject shutdownScreen;
+	public GameObject speedStuff;
 	public TextMesh timeText;
 	public Material[] letterPatterns, numberPatterns;
 	public MeshRenderer[] seqDisplays;
 	public TextMesh submissionDisplayText;
 	public Material bsodScreen;
 	public TextMesh[] cbTexts;
+	public VideoPlayer specialSolveOut;
+	public VideoClip specialClip;
+
+	public Material speedLitLED;
+	public MeshRenderer[] speedLEDS;
 
 	public KMSelectable startButton;
 	public KMSelectable backSpace, submit;
 	public KMSelectable[] keyboard;
 	public KMSelectable reset;
+	public KMSelectable[] speedButtons;
 
 
 	static int moduleIdCounter = 1;
@@ -50,6 +59,10 @@ public class enaCipherScript : MonoBehaviour {
 	private bool cbActive = false;
 
 	private bool lessTime;
+
+	private bool specialSolve;
+
+	private bool useInternal;
 
 	private string getKey(string kw, string alphabet, bool kwFirst)
     {
@@ -68,6 +81,9 @@ public class enaCipherScript : MonoBehaviour {
 	private int[][] extinctionFlashSequence = new int[6][];
 	private int[][] temptationKWFlashSequence;
 	private int[] extPairs = new int[6];
+
+	private int speedIndex = 2;
+	private int speed = 1;
 
 	private string[] mainCB = { "BY", "WL", "WR", "A", "Y" };
 	private string[] numCB = { "B", "Y" };
@@ -106,6 +122,11 @@ public class enaCipherScript : MonoBehaviour {
 				encrypted += word[i];
             }
         }
+
+		if (specialSolve)
+		{
+			Debug.LogFormat("[ƎNA Cipher #{0}] The bomb is activated on February 23rd. Happy ENA Day!", moduleId);
+		}
 
 		Debug.LogFormat("[ƎNA Cipher #{0}] The decrypted word is: {1}", moduleId, word);
 
@@ -304,11 +325,22 @@ public class enaCipherScript : MonoBehaviour {
         {
 			letter.OnInteract += delegate () { keyPress(letter); return false; };
         }
+
+		foreach (KMSelectable arrow in speedButtons)
+		{
+			arrow.OnInteract += delegate () { speedButtonPress(arrow); return false; };
+		}
+
 		backSpace.OnInteract += delegate () { backSpacePress(); return false; };
 		startButton.OnInteract += delegate () { startPress(); return false; };
 		submit.OnInteract += delegate () { submitPress(); return false; };
 		reset.OnInteract += delegate () { resetPress(); return false; };
 		cbActive = Colorblind.ColorblindModeActive;
+
+		if (Application.isEditor)
+		{
+			useInternal = true;
+		}
 
 	}
 
@@ -322,8 +354,106 @@ public class enaCipherScript : MonoBehaviour {
         {
 			cbTexts[i].text = "";
         }
-		StartCoroutine(startingScreen());
+
+		if (DateTime.Now.Month == 2 && DateTime.Now.Day == 23)
+		{
+			specialSolve = true;
+		}
+
+		if (!useInternal)
+		{
+            specialSolveOut.clip = VideoLoader.clips[0];
+            StartCoroutine(waitForClip());
+		}
+		else
+		{
+			specialSolveOut.clip = specialClip;
+            StartCoroutine(startingScreen());
+        }
+
 		wordGenerate();
+    }
+
+	IEnumerator waitForClip()
+	{
+		yield return new WaitUntil(() => VideoLoader.clips != null);
+		
+
+        StartCoroutine(startingScreen());
+    }
+
+	void speedButtonPress(KMSelectable arrow)
+	{
+		Audio.PlaySoundAtTransform("Click", transform);
+		arrow.AddInteractionPunch(0.4f);
+
+		if (moduleSolved || !isActivated)
+		{
+			return;
+		}
+
+		for (int i = 0; i < 2; i++)
+		{
+			if (arrow == speedButtons[i])
+			{
+				switch (i)
+				{
+					case 0:
+						speedIndex--;
+						break;
+					case 1:
+						speedIndex++;
+						break;
+				}
+
+				if (speedIndex < 0)
+				{
+					speedIndex = 0;
+				}
+				else if (speedIndex > 4)
+				{
+					speedIndex = 4;
+				}
+			}
+		}
+		changeSpeed();
+	}
+
+	void changeSpeed()
+	{
+
+		StopAllCoroutines();
+
+		for (int i = 0; i < 5; i++)
+		{
+			speedLEDS[i].material = speedIndex == i ? speedLitLED : biosBootupScreenStuff[0];
+			seqDisplays[i].material = biosBootupScreenStuff[0];
+		}
+
+		switch (speedIndex)
+		{
+			case 0:
+				speed = -2;
+				break;
+			case 1:
+				speed = -1;
+				break;
+			case 2:
+				speed = 1;
+				break;
+			case 3:
+				speed = 2;
+				break;
+			case 4:
+				speed = 3;
+				break;
+		}
+
+        StartCoroutine(flashingEncryptedSequence());
+        StartCoroutine(flashingArithmeticKWSequence());
+        StartCoroutine(flashingExtinctionSequence());
+        StartCoroutine(flashingTemptationKWSequence());
+        StartCoroutine(flashingSubSequence());
     }
 
 	void keyPress(KMSelectable letter)
@@ -362,14 +492,81 @@ public class enaCipherScript : MonoBehaviour {
 		
 		if (submissionDisplayText.text == word)
         {
-			StartCoroutine(solveAnimation());
-			Debug.LogFormat("[ƎNA Cipher #{0}] You have spoken in the language of the Gods! Solved!", moduleId);
+			var normal = "You have spoken in the language of the Gods! Solved!";
+			var special = "TURRŌN? TURRŌN!? TURRŌN!";
+
+			if (specialSolve)
+			{
+				StartCoroutine(specialSolveAnimation());
+			}
+			else
+			{
+                StartCoroutine(solveAnimation());
+            }
+
+			Debug.LogFormat("[ƎNA Cipher #{0}] {1}", moduleId, specialSolve ? special : normal);
         }
         else
         {
 			StartCoroutine(strikeAnimation());
 			Debug.LogFormat("[ƎNA Cipher #{0}] The word you inputted isn't up to our community's typical standards! Strike!", moduleId);
         }
+    }
+
+	IEnumerator specialSolveAnimation()
+	{
+		yield return null;
+		moduleSolved = true;
+
+		var part = 0;
+
+		Audio.PlaySoundAtTransform("SpecialSolve", transform);
+		if (Bomb.GetTime() < 30)
+		{
+			lessTime = true;
+			Bomb.GetComponent<KMBombModule>().HandlePass();
+		}
+
+		submissionWindow.SetActive(false);
+		window.SetActive(true);
+		speedStuff.SetActive(false);
+		
+		while (part != 8)
+		{
+			for (var i = 0; i < 5; i++)
+			{
+				seqDisplays[i].material = letterPatterns[rnd.Range(0,5)];
+			}
+            part++;
+			yield return new WaitForSeconds(0.6f);
+		}
+		for (var i = 0; i < 5; i++)
+		{
+			seqDisplays[i].material = biosBootupScreenStuff[0];
+		}
+		window.SetActive(false);
+		specialSolveOut.Play();
+		specialWindow.SetActive(true);
+		yield return new WaitForSeconds(6.634f);
+		specialWindow.SetActive(false);
+		specialSolveOut.Stop();
+        yield return new WaitForSeconds(0.8f);
+        taskBar.SetActive(false);
+        yield return new WaitForSeconds(1);
+        screen.material = biosBootupScreenStuff[0];
+        yield return new WaitForSeconds(1);
+        screen.material = startupScreen;
+        shutdownScreen.SetActive(true);
+        yield return new WaitForSeconds(2);
+        shutdownScreen.SetActive(false);
+        screen.material = biosBootupScreenStuff[1];
+        yield return new WaitForSeconds(0.8f);
+        screen.material = biosBootupScreenStuff[0];
+        if (!lessTime)
+        {
+            Module.GetComponent<KMBombModule>().HandlePass();
+        }
+
     }
 
 	IEnumerator solveAnimation()
@@ -401,6 +598,7 @@ public class enaCipherScript : MonoBehaviour {
 		submissionWindow.SetActive(false);
 		yield return new WaitForSeconds(0.52f);
 		window.SetActive(true);
+		speedStuff.SetActive(false);
 		while (loop != 18)
         {
 			if (pattern == letterPatterns.Length) pattern = 0;
@@ -527,6 +725,7 @@ public class enaCipherScript : MonoBehaviour {
 		taskBar.SetActive(false);
 		window.SetActive(false);
 		submissionWindow.SetActive(false);
+		specialWindow.SetActive(false);
 
 		yield return null;
 		Audio.PlaySoundAtTransform("BiosStartup", transform);
@@ -692,15 +891,15 @@ public class enaCipherScript : MonoBehaviour {
                 {
 					seqDisplays[0].material = letterPatterns[encryptedFlashSequence[letterPos][letterFlashPos]];
 					cbTexts[0].text = cbActive ? mainCB[encryptedFlashSequence[letterPos][letterFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[0].material = biosBootupScreenStuff[0];
 					cbTexts[0].text = "";
 					letterFlashPos++;
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
                 }
 				letterPos++;
 				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f);
+				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
             }
 			yield return new WaitForSeconds(1);
         }
@@ -723,15 +922,15 @@ public class enaCipherScript : MonoBehaviour {
 				{
 					seqDisplays[1].material = letterPatterns[arithmeticKWFlashSequence[letterPos][letterFlashPos]];
 					cbTexts[1].text = cbActive ? mainCB[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[1].material = biosBootupScreenStuff[0];
 					cbTexts[1].text = "";
 					letterFlashPos++;
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 				}
 				letterPos++;
 				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f);
+				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
 			}
 			yield return new WaitForSeconds(1);
 		}
@@ -754,15 +953,15 @@ public class enaCipherScript : MonoBehaviour {
                 {
 					seqDisplays[2].material = numberPatterns[extinctionFlashSequence[numberPos][numberFlashPos]];
 					cbTexts[2].text = cbActive ? numCB[extinctionFlashSequence[numberPos][numberFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[2].material = biosBootupScreenStuff[0];
 					cbTexts[2].text = "";
 					numberFlashPos++;
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
                 }
 				numberPos++;
 				numberFlashPos = 0;
-				yield return new WaitForSeconds(0.7f);
+				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
             }
 			yield return new WaitForSeconds(1);
         }
@@ -785,15 +984,15 @@ public class enaCipherScript : MonoBehaviour {
 				{
 					seqDisplays[3].material = letterPatterns[temptationKWFlashSequence[letterPos][letterFlashPos]];
 					cbTexts[3].text = cbActive ? mainCB[temptationKWFlashSequence[letterPos][letterFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[3].material = biosBootupScreenStuff[0];
 					cbTexts[3].text = "";
 					letterFlashPos++;
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 				}
 				letterPos++;
 				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f);
+				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
 			}
 			yield return new WaitForSeconds(1);
 		}
@@ -815,15 +1014,15 @@ public class enaCipherScript : MonoBehaviour {
                 {
 					seqDisplays[4].material = letterPatterns[jSubFlashSequence[letterPos][letterFlashPos]];
 					cbTexts[4].text = cbActive ? mainCB[jSubFlashSequence[letterPos][letterFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[4].material = biosBootupScreenStuff[0];
 					cbTexts[4].text = "";
 					letterFlashPos++;
-					yield return new WaitForSeconds(0.3f);
+					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
                 }
 				letterPos++;
 				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f);
+				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
             }
 			yield return new WaitForSeconds(1);
         }
@@ -866,7 +1065,7 @@ public class enaCipherScript : MonoBehaviour {
 	// Twitch Plays
 
 #pragma warning disable 414
-	private readonly string TwitchHelpMessage = @"!{0} submit [insert answer here] to input your decrypted word. || cb to enable colorblind mode.";
+	private readonly string TwitchHelpMessage = @"!{0} submit [insert answer here] to input your decrypted word. || !{0} cb to enable colorblind mode. || !{0} speed -/+ to increase or decrease speed of the flashing patterns.";
 #pragma warning restore 414
 
 	private int getCharIndex(char c)
@@ -887,6 +1086,36 @@ public class enaCipherScript : MonoBehaviour {
 				yield break;
 			}
 			cbActive = !cbActive;
+			yield break;
+		}
+
+		if (split[0].EqualsIgnoreCase("SPEED"))
+		{
+			if (!isActivated)
+			{
+				yield return "sendtochaterror OS is still booting. Please stand by before adjusting the speed.";
+				yield break;
+			}
+
+			if (split.Length != 2)
+			{
+				yield break;
+            }
+
+			if (split[1].EqualsIgnoreCase("-"))
+			{
+				speedButtons[0].OnInteract();
+				yield break;
+			}
+			else if (split[1].EqualsIgnoreCase("+"))
+			{
+				speedButtons[1].OnInteract();
+				yield break;
+			}
+			else
+			{
+				yield return "sendtochaterror Please specify either + or - to increase or decrease the speed!";
+			}
 			yield break;
 		}
 

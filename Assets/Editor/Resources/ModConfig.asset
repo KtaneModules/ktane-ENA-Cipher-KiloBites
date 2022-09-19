@@ -18,6 +18,6 @@ MonoBehaviour:
 
 
     Decode a word that was encoded with patterns and 3 different ciphers.'
-  version: 1.0
+  version: 2.0
   outputFolder: build
   previewImage: {fileID: 2800000, guid: 471379bd6f82e9348b40f7af8f870a8c, type: 3}
