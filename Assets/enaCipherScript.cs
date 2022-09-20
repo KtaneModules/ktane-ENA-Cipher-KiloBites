@@ -63,6 +63,8 @@ public class enaCipherScript : MonoBehaviour {
 
 	private bool specialSolve;
 
+	private static VideoClip assignedClip;
+
 	private string getKey(string kw, string alphabet, bool kwFirst)
     {
 		return (kwFirst ? (kw + alphabet) : alphabet.Except(kw).Concat(kw)).Distinct().Join("");
@@ -355,13 +357,20 @@ public class enaCipherScript : MonoBehaviour {
 			specialSolve = true;
 		}
 
+		if (!assignedClip)
+		{
+			assignedClip = PathManager.GetAssets<VideoClip>("ena").Single();
+        }
+
 		if (!Application.isEditor)
 		{
-			specialClip = PathManager.GetAssets<VideoClip>("ena").Single();
-		}
+            specialClip = assignedClip;
+            specialSolveOut.clip = specialClip;
+        }
 
-		specialSolveOut.clip = specialClip;
-		specialSolveOut.Prepare();
+
+
+        specialSolveOut.Prepare();
 
         StartCoroutine(startingScreen());
         wordGenerate();
