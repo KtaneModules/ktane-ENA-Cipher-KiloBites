@@ -143,6 +143,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 		string currentMessage = word;
 
+		Debug.LogFormat("[ƎNA Cipher #{0}] Temptation Stairway Keyword: {1}", moduleId, keywords[1]);
 		Debug.LogFormat("[ƎNA Cipher #{0}] Temptation Stairway Key: {1}", moduleId, key1);
 		Debug.LogFormat("[ƎNA Cipher #{0}] Beginning Temptation Stairway Encryption", moduleId);
 
@@ -170,6 +171,7 @@ public class enaCipherScript : MonoBehaviour {
 
 		Debug.LogFormat("[ƎNA Cipher #{0}] After encrypting with Extinction Transposition: {1}", moduleId, currentMessage);
 
+		Debug.LogFormat("[ƎNA Cipher #{0}] Arithmetic Sequence Keyword: {1}", moduleId, keywords[0]);
 		Debug.LogFormat("[ƎNA Cipher #{0}] Arithmetic Sequence Key: {1}", moduleId, key2);
 		Debug.LogFormat("[ƎNA Cipher #{0}] Beginning Arithmetic Sequence Encryption", moduleId);
 		currentMessage = encryptArithmeticSequence(currentMessage, key2);
