@@ -141,7 +141,9 @@ public class enaCipherScript : MonoBehaviour {
 
 	void encryptionStuff(string key1, string key2, string word)
     {
-		string currentMessage = word;
+
+		string currentMessage;
+		currentMessage = word;
 
 		Debug.LogFormat("[ƎNA Cipher #{0}] Temptation Stairway Keyword: {1}", moduleId, keywords[1]);
 		Debug.LogFormat("[ƎNA Cipher #{0}] Temptation Stairway Key: {1}", moduleId, key1);
@@ -181,7 +183,10 @@ public class enaCipherScript : MonoBehaviour {
 		int[] reversed = extPairs;
 
 		Array.Reverse(reversed);
-		generatingEncryptedFlashSeq(currentMessage);
+
+		encrypted = currentMessage;
+
+		generatingEncryptedFlashSeq(encrypted);
         generatingArithmeticKeywordFlashSeq(keywords[0]);
 		generatingExtinctionFlashSeq(reversed.Join("").ToString());
 		generatingTemptationKeywordFlashSeq(keywords[1]);
@@ -359,16 +364,16 @@ public class enaCipherScript : MonoBehaviour {
 			specialSolve = true;
 		}
 
-		if (!assignedClip)
+		if (!assignedClip && !Application.isEditor)
 		{
 			assignedClip = PathManager.GetAssets<VideoClip>("ena").Single();
-        }
-
-		if (!Application.isEditor)
-		{
             specialClip = assignedClip;
             specialSolveOut.clip = specialClip;
         }
+		else
+		{
+			specialSolveOut.clip = specialClip;
+		}
 
 
 
@@ -698,12 +703,12 @@ public class enaCipherScript : MonoBehaviour {
 	IEnumerator resetSequence()
     {
 		yield return null;
+		submission = false;
 		submissionDisplayText.text = "";
 		submissionWindow.SetActive(false);
 		yield return new WaitForSeconds(1.5f);
 		Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.TitleMenuPressed, transform);
 		window.SetActive(true);
-		submission = false;
 		yield return new WaitForSeconds(1);
 		StartCoroutine(flashingEncryptedSequence());
 		StartCoroutine(flashingArithmeticKWSequence());
