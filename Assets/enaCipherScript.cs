@@ -82,8 +82,10 @@ public class enaCipherScript : MonoBehaviour {
 	private int[][] extinctionFlashSequence = new int[6][];
 	private int[][] temptationKWFlashSequence;
 	private int[] extPairs = new int[6];
+	int[] reversed;
 
-	private int speedIndex = 2;
+
+    private int speedIndex = 2;
 	private int speed = 1;
 
 	private string[] mainCB = { "BY", "WL", "WR", "A", "Y" };
@@ -180,7 +182,7 @@ public class enaCipherScript : MonoBehaviour {
 		
 		Debug.LogFormat("[ƎNA Cipher #{0}] After encrypting with Arithmetic Sequence Cipher: {1}", moduleId, currentMessage);
 
-		int[] reversed = extPairs;
+		reversed = extPairs;
 
 		Array.Reverse(reversed);
 
