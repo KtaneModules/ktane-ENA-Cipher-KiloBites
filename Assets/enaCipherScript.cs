@@ -576,7 +576,7 @@ public class enaCipherScript : MonoBehaviour {
 	IEnumerator solveAnimation()
     {
 		yield return null;
-		moduleSolved = true;
+		submission = false;
 		submissionDisplayText.text = "";
 		string solveText = "YEAH!";
 		int loop = 0;
@@ -586,6 +586,7 @@ public class enaCipherScript : MonoBehaviour {
 		if (Bomb.GetTime() < 30)
         {
 			lessTime = true;
+			moduleSolved = true;
 			Bomb.GetComponent<KMBombModule>().HandlePass();
         }
 
@@ -635,6 +636,7 @@ public class enaCipherScript : MonoBehaviour {
 		screen.material = biosBootupScreenStuff[0];
 		if (!lessTime)
         {
+			moduleSolved = true;
 			Module.GetComponent<KMBombModule>().HandlePass();
 		}
 
