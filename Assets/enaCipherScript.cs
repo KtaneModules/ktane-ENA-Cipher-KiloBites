@@ -49,9 +49,12 @@ public class enaCipherScript : MonoBehaviour {
 	public KMSelectable[] speedButtons;
 
 
-	static int moduleIdCounter = 1;
-	int moduleId;
+	private int moduleId;
+	private static int moduleIdCounter = 1;
 	private bool moduleSolved;
+
+	private int _enaCipherId;
+	private static int _enaCipherIdCounter = 1;
 
 	private bool isActivated;
 
@@ -330,6 +333,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 
 		moduleId = moduleIdCounter++;
+		_enaCipherId = _enaCipherIdCounter++;
 
 		foreach (KMSelectable letter in keyboard)
         {
@@ -350,7 +354,11 @@ public class enaCipherScript : MonoBehaviour {
 
 	}
 
-	
+	private void OnDestroy()
+    {
+		_enaCipherIdCounter = 1;
+    }
+
 	void Start()
     {
 		Module.GetComponent<KMSelectable>().OnFocus += delegate { moduleSelected = true; };
@@ -734,7 +742,8 @@ public class enaCipherScript : MonoBehaviour {
 		specialWindow.SetActive(false);
 
 		yield return null;
-		Audio.PlaySoundAtTransform("BiosStartup", transform);
+		if (_enaCipherId == 1)
+			Audio.PlaySoundAtTransform("BiosStartup", transform);
 		yield return new WaitForSeconds(4);
 		screen.material = biosBootupScreenStuff[1];
 		yield return new WaitForSeconds(0.5f);
@@ -763,7 +772,8 @@ public class enaCipherScript : MonoBehaviour {
 		yield return new WaitForSeconds(1);
 		screen.material = backgroundScreen;
 		yield return new WaitForSeconds(1);
-		Audio.PlaySoundAtTransform("OSBoot", transform);
+		if (_enaCipherId == 1)
+			Audio.PlaySoundAtTransform("OSBoot", transform);
 		yield return new WaitForSeconds(1);
 		taskBar.SetActive(true);
 		yield return new WaitForSeconds(1);
