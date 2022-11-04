@@ -66,6 +66,8 @@ public class enaCipherScript : MonoBehaviour {
 
 	private bool specialSolve;
 
+	private bool disableAllButtons;
+
 	private static VideoClip assignedClip;
 
 	private string getKey(string kw, string alphabet, bool kwFirst)
@@ -399,7 +401,7 @@ public class enaCipherScript : MonoBehaviour {
 		Audio.PlaySoundAtTransform("Click", transform);
 		arrow.AddInteractionPunch(0.4f);
 
-		if (moduleSolved || !isActivated)
+		if (moduleSolved || !isActivated || disableAllButtons)
 		{
 			return;
 		}
@@ -472,7 +474,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 		Audio.PlaySoundAtTransform("KeyPress", transform);
 		letter.AddInteractionPunch(0.4f);
-		if (moduleSolved)
+		if (moduleSolved || disableAllButtons)
         {
 			return;
         }
@@ -486,7 +488,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 		Audio.PlaySoundAtTransform("KeyPress", transform);
 		backSpace.AddInteractionPunch(0.4f);
-		if (moduleSolved)
+		if (moduleSolved || disableAllButtons)
         {
 			return;
         }
@@ -497,7 +499,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 		Audio.PlaySoundAtTransform("KeyPress", transform);
 		submit.AddInteractionPunch(0.4f);
-		if (moduleSolved)
+		if (moduleSolved || disableAllButtons)
         {
 			return;
         }
@@ -528,14 +530,16 @@ public class enaCipherScript : MonoBehaviour {
 	IEnumerator specialSolveAnimation()
 	{
 		yield return null;
-		moduleSolved = true;
 
 		var part = 0;
+
+		disableAllButtons = true;
 
 		Audio.PlaySoundAtTransform("SpecialSolve", transform);
 		if (Bomb.GetTime() < 30)
 		{
 			lessTime = true;
+			moduleSolved = true;
 			Bomb.GetComponent<KMBombModule>().HandlePass();
 		}
 
@@ -577,6 +581,7 @@ public class enaCipherScript : MonoBehaviour {
         if (!lessTime)
         {
             Module.GetComponent<KMBombModule>().HandlePass();
+			moduleSolved = true;
         }
 
     }
@@ -585,6 +590,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 		yield return null;
 		submission = false;
+		disableAllButtons = true;
 		submissionDisplayText.text = "";
 		string solveText = "YEAH!";
 		int loop = 0;
@@ -655,6 +661,7 @@ public class enaCipherScript : MonoBehaviour {
     {
 		yield return null;
 		submission = false;
+		disableAllButtons = true;
 		Audio.PlaySoundAtTransform("Strike", transform);
 		submissionDisplayText.text = "";
 		submissionWindow.SetActive(false);
@@ -668,6 +675,7 @@ public class enaCipherScript : MonoBehaviour {
 		screen.material = backgroundScreen;
 		window.SetActive(true);
 		taskBar.SetActive(true);
+		disableAllButtons = false;
 		yield return new WaitForSeconds(1);
 		StartCoroutine(flashingEncryptedSequence());
 		StartCoroutine(flashingArithmeticKWSequence());
@@ -682,7 +690,7 @@ public class enaCipherScript : MonoBehaviour {
 		Audio.PlaySoundAtTransform("Click", transform);
 		startButton.AddInteractionPunch(0.4f);
 
-		if (submission || !isActivated || moduleSolved)
+		if (submission || !isActivated || moduleSolved || disableAllButtons)
         {
 			return;
         }
@@ -1093,6 +1101,12 @@ public class enaCipherScript : MonoBehaviour {
     {
 		yield return null;
 		string[] split = command.ToUpperInvariant().Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+
+		if (disableAllButtons)
+		{
+			yield return "sendtochaterror You cannot interact with the module at the moment!";
+			yield break;
+		}
 
 		if (split[0].EqualsIgnoreCase("CB"))
 		{
