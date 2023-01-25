@@ -1175,7 +1175,6 @@ public class enaCipherScript : MonoBehaviour {
 			keyboard[getCharIndex(let)].OnInteract();
 			yield return new WaitForSeconds(0.1f);
         }
-		yield return new WaitForSeconds(0.1f);
 		submit.OnInteract();
 	}
 
@@ -1198,6 +1197,12 @@ public class enaCipherScript : MonoBehaviour {
 			yield return new WaitForSeconds(0.1f);
         }
 		submit.OnInteract();
+		
+		while (!moduleSolved)
+		{
+			yield return true;
+		}
+
 		yield return null;
     }
 
