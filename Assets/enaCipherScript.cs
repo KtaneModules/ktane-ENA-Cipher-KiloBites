@@ -20,19 +20,26 @@ public class enaCipherScript : MonoBehaviour {
 	public TextMesh ramText;
 	public Material[] biosBootupScreenStuff;
 	public Material startupScreen, backgroundScreen;
-	public GameObject biosStuff, startupStuff;
+	public Material[] dreamStartupScreens;
+	public GameObject biosStuff;
+	public GameObject[] startupStuff;
 	public GameObject[] loadingBars;
 	public GameObject specialWindow;
-	public MeshRenderer screen;
+	public GameObject dreamLoadingCircle;
+	public MeshRenderer screen, border;
 	public GameObject taskBar;
 	public GameObject window;
 	public GameObject submissionWindow;
 	public GameObject blueScreenMessage;
-	public GameObject shutdownScreen;
+	public GameObject[] shutdownScreen;
 	public GameObject speedStuff;
 	public TextMesh timeText;
 	public Material[] letterPatterns, numberPatterns;
+	public Material[] dreamLetterPatterns, dreamNumberPatterns;
+	public Material[] startIcons;
+	public Material[] borderTextures;
 	public MeshRenderer[] seqDisplays;
+	public MeshRenderer startIcon;
 	public TextMesh submissionDisplayText;
 	public Material bsodScreen;
 	public TextMesh[] cbTexts;
@@ -57,16 +64,13 @@ public class enaCipherScript : MonoBehaviour {
 	private static int _enaCipherIdCounter = 1;
 
 	private bool isActivated;
-
 	private bool submission = false;
-
 	private bool cbActive = false;
-
 	private bool lessTime;
-
 	private bool specialSolve;
-
 	private bool disableAllButtons;
+	private bool dreamBBQMode = false;
+	private bool spinning;
 
 	private static VideoClip assignedClip;
 
@@ -79,6 +83,7 @@ public class enaCipherScript : MonoBehaviour {
 	private string[] keywords = new string[2];
 	private string encrypted = "";
 	private bool[] jSub = new bool[6];
+	private string submissionText;
 	private bool moduleSelected;
 
 	private int[][] encryptedFlashSequence = new int[6][];
@@ -93,8 +98,12 @@ public class enaCipherScript : MonoBehaviour {
     private int speedIndex = 2;
 	private int speed = 1;
 
-	private string[] mainCB = { "BY", "WL", "WR", "A", "Y" };
+	private int dreamIx;
+
+	private string[] mainCB = { "BY", "", "", "", "Y" };
 	private string[] numCB = { "B", "Y" };
+	private string[] mainDreamCB = { "WR", "", "G", "KT", "KY" };
+	private string[] numDreamCB = { "", "R" };
 
 	private string sub = "";
 
@@ -131,6 +140,11 @@ public class enaCipherScript : MonoBehaviour {
             }
         }
 
+		if (dreamBBQMode)
+		{
+			Debug.LogFormat("[ƎNA Cipher #{0}] Dream BBQ Mode has been activated!", moduleId);
+		}
+
 		if (specialSolve)
 		{
 			Debug.LogFormat("[ƎNA Cipher #{0}] The bomb is activated on February 23rd. Happy ENA Day!", moduleId);
@@ -140,7 +154,7 @@ public class enaCipherScript : MonoBehaviour {
 
 
 		string temptKey = getKey(keywords[1].Replace('J', 'I'), "ABCDEFGHIKLMNOPQRSTUVWXYZ", ((Bomb.GetPortCount()) % 2 != 0 && (Bomb.GetPortPlateCount()) % 2 == 0));
-		string arithKey = getKey(keywords[0], "ABCDEFGHIJKLMNOPQRSTUVWXYZ", (Bomb.GetSerialNumberLetters().Any(x => x == 'E' || x == 'N' || x == 'A')));
+		string arithKey = getKey(keywords[0], "ABCDEFGHIJKLMNOPQRSTUVWXYZ", (Bomb.GetSerialNumberLetters().Any(x => "ENA".Contains(x))));
 
 		generateExtPairSequence();
 		encryptionStuff(temptKey, arithKey, encrypted);
@@ -214,11 +228,6 @@ public class enaCipherScript : MonoBehaviour {
 
 			int[] row = currentSet.Select(x => key.IndexOf(x) / 5).ToArray();
 			int[] col = currentSet.Select(x => key.IndexOf(x) % 5).ToArray();
-
-			if (row.Distinct().Count() == 1 || col.Distinct().Count() == 1)
-            {
-				// Same letter? Stay put.
-            }
 
 			int cMin = col.Min();
 			int cMax = col.Max();
@@ -330,9 +339,20 @@ public class enaCipherScript : MonoBehaviour {
 		return output;
     }
 
+	class ENACipherSettings
+	{
+		public bool DreamBBQMode = false;
+	}
+
+	private ENACipherSettings ENASettings = new ENACipherSettings();
 
 	void Awake()
     {
+
+		ModConfig<ENACipherSettings> config = new ModConfig<ENACipherSettings>("ENACipherSettings");
+		ENASettings = config.Read();
+		config.Write(ENASettings);
+		dreamBBQMode = ENASettings.DreamBBQMode;
 
 		moduleId = moduleIdCounter++;
 		_enaCipherId = _enaCipherIdCounter++;
@@ -352,9 +372,9 @@ public class enaCipherScript : MonoBehaviour {
 		submit.OnInteract += delegate () { submitPress(); return false; };
 		reset.OnInteract += delegate () { resetPress(); return false; };
 		cbActive = Colorblind.ColorblindModeActive;
-
-
-	}
+        Module.GetComponent<KMSelectable>().OnFocus += delegate { moduleSelected = true; };
+        Module.GetComponent<KMSelectable>().OnDefocus += delegate { moduleSelected = false; };
+    }
 
 	private void OnDestroy()
     {
@@ -363,13 +383,15 @@ public class enaCipherScript : MonoBehaviour {
 
 	void Start()
     {
-		Module.GetComponent<KMSelectable>().OnFocus += delegate { moduleSelected = true; };
-		Module.GetComponent<KMSelectable>().OnDefocus += delegate { moduleSelected = false; };
 		submissionDisplayText.text = "";
 		for (int i = 0; i < 5; i++)
         {
 			cbTexts[i].text = "";
         }
+
+		border.material = dreamBBQMode ? borderTextures[1] : borderTextures[0];
+
+		dreamIx = rnd.Range(0, 2);
 
 		if (DateTime.Now.Month == 2 && DateTime.Now.Day == 23)
 		{
@@ -480,7 +502,8 @@ public class enaCipherScript : MonoBehaviour {
         }
 		if (submissionDisplayText.text.Length < 6)
         {
-			submissionDisplayText.text += letter.GetComponentInChildren<TextMesh>().text;
+			submissionText += letter.GetComponentInChildren<TextMesh>().text;
+			submissionDisplayText.text = submissionText;
         }
     }
 
@@ -492,7 +515,11 @@ public class enaCipherScript : MonoBehaviour {
         {
 			return;
         }
-		submissionDisplayText.text = "";
+		if (submissionDisplayText.text.Length > 0)
+		{
+			submissionText = submissionText.Remove(submissionText.Length - 1);
+			submissionDisplayText.text = submissionText;
+		}
     }
 
 	void submitPress()
@@ -504,19 +531,12 @@ public class enaCipherScript : MonoBehaviour {
 			return;
         }
 		
-		if (submissionDisplayText.text == word)
+		if (submissionText == word)
         {
 			var normal = "You have spoken in the language of the Gods! Solved!";
 			var special = "TURRŌN? TURRŌN!? TURRŌN!";
 
-			if (specialSolve)
-			{
-				StartCoroutine(specialSolveAnimation());
-			}
-			else
-			{
-                StartCoroutine(solveAnimation());
-            }
+			StartCoroutine(specialSolve ? specialSolveAnimation() : solveAnimation());
 
 			Debug.LogFormat("[ƎNA Cipher #{0}] {1}", moduleId, specialSolve ? special : normal);
         }
@@ -572,9 +592,9 @@ public class enaCipherScript : MonoBehaviour {
         screen.material = biosBootupScreenStuff[0];
         yield return new WaitForSeconds(1);
         screen.material = startupScreen;
-        shutdownScreen.SetActive(true);
+        shutdownScreen[dreamBBQMode ? 1 : 0].SetActive(true);
         yield return new WaitForSeconds(2);
-        shutdownScreen.SetActive(false);
+        shutdownScreen[dreamBBQMode ? 1 : 0].SetActive(false);
         screen.material = biosBootupScreenStuff[1];
         yield return new WaitForSeconds(0.8f);
         screen.material = biosBootupScreenStuff[0];
@@ -623,7 +643,7 @@ public class enaCipherScript : MonoBehaviour {
 			if (pattern == letterPatterns.Length) pattern = 0;
 			for (int i = 0; i < seqDisplays.Length; i++)
             {
-				seqDisplays[i].material = letterPatterns[pattern];
+				seqDisplays[i].material = dreamBBQMode ? dreamLetterPatterns[pattern] : letterPatterns[pattern];
 				yield return new WaitForSeconds(0.06f);
             }
 			loop++;
@@ -631,7 +651,7 @@ public class enaCipherScript : MonoBehaviour {
         }
 		for (int i = 0; i < seqDisplays.Length; i++)
         {
-			seqDisplays[i].material = letterPatterns[i];
+			seqDisplays[i].material = dreamBBQMode ? dreamLetterPatterns[i] : letterPatterns[i];
 			yield return new WaitForSeconds(0.06f);
         }
 		yield return new WaitForSeconds(1);
@@ -641,10 +661,10 @@ public class enaCipherScript : MonoBehaviour {
 		yield return new WaitForSeconds(1);
 		screen.material = biosBootupScreenStuff[0];
 		yield return new WaitForSeconds(1);
-		screen.material = startupScreen;
-		shutdownScreen.SetActive(true);
+		screen.material = dreamBBQMode ? dreamStartupScreens[dreamIx] : startupScreen;
+		shutdownScreen[dreamBBQMode ? 1 : 0].SetActive(true);
 		yield return new WaitForSeconds(2);
-		shutdownScreen.SetActive(false);
+		shutdownScreen[dreamBBQMode ? 1 : 0].SetActive(false);
 		screen.material = biosBootupScreenStuff[1];
 		yield return new WaitForSeconds(0.8f);
 		screen.material = biosBootupScreenStuff[0];
@@ -765,17 +785,26 @@ public class enaCipherScript : MonoBehaviour {
 		yield return new WaitForSeconds(0.8f);
 		biosStuff.SetActive(false);
 		yield return new WaitForSeconds(0.5f);
-		screen.material = startupScreen;
-		startupStuff.SetActive(true);
+		screen.material = dreamBBQMode ? dreamStartupScreens[dreamIx] : startupScreen;
+		startupStuff[dreamBBQMode ? 1 : 0].SetActive(true);
 		yield return new WaitForSeconds(0.1f);
-		while (loadingBar != 8)
-        {
-			loadingBars[loadingBar].SetActive(true);
-			loadingBar++;
-			yield return new WaitForSeconds(0.2f);
+		if (!dreamBBQMode)
+		{
+            while (loadingBar != 8)
+            {
+                loadingBars[loadingBar].SetActive(true);
+                loadingBar++;
+                yield return new WaitForSeconds(0.2f);
+            }
         }
+		else
+		{
+			spinning = true;
+			yield return new WaitForSeconds(1.6f);
+		}
 		yield return new WaitForSeconds(1);
-		startupStuff.SetActive(false);
+		spinning = false;
+		startupStuff[dreamBBQMode ? 1 : 0].SetActive(false);
 		screen.material = biosBootupScreenStuff[0];
 		yield return new WaitForSeconds(1);
 		screen.material = backgroundScreen;
@@ -783,6 +812,7 @@ public class enaCipherScript : MonoBehaviour {
 		if (_enaCipherId == 1)
 			Audio.PlaySoundAtTransform("OSBoot", transform);
 		yield return new WaitForSeconds(1);
+		startIcon.material = dreamBBQMode ? startIcons[1] : startIcons[0];
 		taskBar.SetActive(true);
 		yield return new WaitForSeconds(1);
 		window.SetActive(true);
@@ -913,8 +943,8 @@ public class enaCipherScript : MonoBehaviour {
             {
 				while (letterFlashPos < 3)
                 {
-					seqDisplays[0].material = letterPatterns[encryptedFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[0].text = cbActive ? mainCB[encryptedFlashSequence[letterPos][letterFlashPos]] : "";
+					seqDisplays[0].material = dreamBBQMode ? dreamLetterPatterns[encryptedFlashSequence[letterPos][letterFlashPos]] : letterPatterns[encryptedFlashSequence[letterPos][letterFlashPos]];
+					cbTexts[0].text = cbActive && dreamBBQMode ? mainDreamCB[encryptedFlashSequence[letterPos][letterFlashPos]] : cbActive ? mainCB[encryptedFlashSequence[letterPos][letterFlashPos]] : "";
 					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[0].material = biosBootupScreenStuff[0];
 					cbTexts[0].text = "";
@@ -944,8 +974,8 @@ public class enaCipherScript : MonoBehaviour {
 			{
 				while (letterFlashPos < 3)
 				{
-					seqDisplays[1].material = letterPatterns[arithmeticKWFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[1].text = cbActive ? mainCB[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : "";
+					seqDisplays[1].material = dreamBBQMode ? dreamLetterPatterns[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : letterPatterns[arithmeticKWFlashSequence[letterPos][letterFlashPos]];
+					cbTexts[1].text = cbActive && dreamBBQMode ? mainDreamCB[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : cbActive? mainCB[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : "";
 					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[1].material = biosBootupScreenStuff[0];
 					cbTexts[1].text = "";
@@ -975,8 +1005,8 @@ public class enaCipherScript : MonoBehaviour {
             {
 				while (numberFlashPos < 3)
                 {
-					seqDisplays[2].material = numberPatterns[extinctionFlashSequence[numberPos][numberFlashPos]];
-					cbTexts[2].text = cbActive ? numCB[extinctionFlashSequence[numberPos][numberFlashPos]] : "";
+					seqDisplays[2].material = dreamBBQMode ? dreamNumberPatterns[extinctionFlashSequence[numberPos][numberFlashPos]] : numberPatterns[extinctionFlashSequence[numberPos][numberFlashPos]];
+					cbTexts[2].text = cbActive && dreamBBQMode ? numDreamCB[extinctionFlashSequence[numberPos][numberFlashPos]] : cbActive ? numCB[extinctionFlashSequence[numberPos][numberFlashPos]] : "";
 					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[2].material = biosBootupScreenStuff[0];
 					cbTexts[2].text = "";
@@ -1006,8 +1036,8 @@ public class enaCipherScript : MonoBehaviour {
 			{
 				while (letterFlashPos < 3)
 				{
-					seqDisplays[3].material = letterPatterns[temptationKWFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[3].text = cbActive ? mainCB[temptationKWFlashSequence[letterPos][letterFlashPos]] : "";
+					seqDisplays[3].material = dreamBBQMode ? dreamLetterPatterns[temptationKWFlashSequence[letterPos][letterFlashPos]] : letterPatterns[temptationKWFlashSequence[letterPos][letterFlashPos]];
+					cbTexts[3].text = cbActive && dreamBBQMode ? mainDreamCB[temptationKWFlashSequence[letterPos][letterFlashPos]] : cbActive ? mainCB[temptationKWFlashSequence[letterPos][letterFlashPos]] : "";
 					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[3].material = biosBootupScreenStuff[0];
 					cbTexts[3].text = "";
@@ -1036,8 +1066,8 @@ public class enaCipherScript : MonoBehaviour {
             {
 				while (letterFlashPos < 3)
                 {
-					seqDisplays[4].material = letterPatterns[jSubFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[4].text = cbActive ? mainCB[jSubFlashSequence[letterPos][letterFlashPos]] : "";
+					seqDisplays[4].material =  dreamBBQMode ? dreamLetterPatterns[jSubFlashSequence[letterPos][letterFlashPos]] : letterPatterns[jSubFlashSequence[letterPos][letterFlashPos]];
+					cbTexts[4].text = cbActive && dreamBBQMode ? mainDreamCB[jSubFlashSequence[letterPos][letterFlashPos]] : cbActive ? mainCB[jSubFlashSequence[letterPos][letterFlashPos]] : "";
 					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 					seqDisplays[4].material = biosBootupScreenStuff[0];
 					cbTexts[4].text = "";
@@ -1058,6 +1088,11 @@ public class enaCipherScript : MonoBehaviour {
 	void Update()
     {
 		setupClock();
+
+		if (spinning)
+		{
+			dreamLoadingCircle.transform.Rotate(-Vector3.forward * 120 * Time.deltaTime);
+		}
 
 		if (moduleSelected && submission)
         {
@@ -1089,13 +1124,31 @@ public class enaCipherScript : MonoBehaviour {
 	// Twitch Plays
 
 #pragma warning disable 414
-	private readonly string TwitchHelpMessage = @"!{0} submit [insert answer here] to input your decrypted word. || !{0} cb to enable colorblind mode. || !{0} speed -/+ to increase or decrease speed of the flashing patterns.";
+	private readonly string TwitchHelpMessage = @"!{0} submit [insert answer here] to input your decrypted word. || !{0} cb to enable colorblind mode. || !{0} speed -/+ to increase or decrease speed of the flashing patterns. || !{0} dreambbq to change skin variant to Dream BBQ. Please\n" + "note that once you've done this, you cannot revert back to the original skin!";
 #pragma warning restore 414
 
 	private int getCharIndex(char c)
     {
 		return "QWERTYUIOPASDFGHJKLZXCVBNM".IndexOf(c);
     }
+
+	private string getModuleCode()
+	{
+		Transform closest = null;
+		float closestDistance = float.MaxValue;
+
+		foreach (Transform children in transform.parent)
+		{
+			var distance = (transform.position - children.position).magnitude;
+			if (children.gameObject.name == "TwitchModule(Clone)" && (closest == null || distance < closestDistance))
+			{
+				closest = children;
+				closestDistance = distance;
+			}
+		}
+
+		return closest != null ? closest.Find("MultiDeckerUI").Find("IDText").GetComponent<UnityEngine.UI.Text>().text : null;
+	}
 
 	IEnumerator ProcessTwitchCommand (string command)
     {
@@ -1149,8 +1202,57 @@ public class enaCipherScript : MonoBehaviour {
 			yield break;
 		}
 
+        if (split[0].EqualsIgnoreCase("DREAMBBQ"))
+        {
+			if (!isActivated)
+			{
+				yield return "sendtochaterror The module is not activated yet! Please wait before you make the transition to Dream BBQ mode!";
+				yield break;
+			}
 
-		if (split.Length != 2 || !split[0].EqualsIgnoreCase("SUBMIT"))
+            else if (dreamBBQMode)
+            {
+                yield return "sendtochaterror You have already changed the look of the module!";
+                yield break;
+            }
+
+            yield return string.Format("sendtochat Dream BBQ mode is now activated on Module {0} (ƎNA Cipher).", getModuleCode());
+            dreamBBQMode = !dreamBBQMode;
+            yield return new WaitForSeconds(1);
+            yield return "sendtochat Please stand by...";
+            StopAllCoroutines();
+            for (int i = 0; i < 5; i++)
+            {
+                seqDisplays[i].material = biosBootupScreenStuff[0];
+				cbTexts[i].text = "";
+            }
+            isActivated = false;
+            taskBar.SetActive(false);
+            window.SetActive(false);
+            startIcon.material = startIcons[1];
+            screen.material = biosBootupScreenStuff[0];
+            Audio.PlaySoundAtTransform("Shutdown", transform);
+            yield return new WaitForSeconds(3);
+            border.material = borderTextures[1];
+            Audio.PlaySoundAtTransform("ShortStartup", transform);
+            yield return new WaitForSeconds(2);
+            screen.material = biosBootupScreenStuff[1];
+            yield return new WaitForSeconds(0.8f);
+            screen.material = backgroundScreen;
+            taskBar.SetActive(true);
+            window.SetActive(true);
+            yield return new WaitForSeconds(1);
+            isActivated = true;
+            StartCoroutine(flashingEncryptedSequence());
+            StartCoroutine(flashingArithmeticKWSequence());
+            StartCoroutine(flashingExtinctionSequence());
+            StartCoroutine(flashingTemptationKWSequence());
+            StartCoroutine(flashingSubSequence());
+            yield break;
+        }
+
+
+        if (split.Length != 2 || !split[0].EqualsIgnoreCase("SUBMIT"))
         {
 			yield break;
         }
@@ -1160,6 +1262,8 @@ public class enaCipherScript : MonoBehaviour {
 			yield return "sendtochaterror OS is still booting. Please stand by before submitting anything.";
 			yield break;
         }
+
+		
 
 		
 
@@ -1186,11 +1290,18 @@ public class enaCipherScript : MonoBehaviour {
         }
 		if (submission && !word.StartsWith(submissionDisplayText.text))
         {
-			backSpace.OnInteract();
-			yield return new WaitForSeconds(0.1f);
+			while (submissionDisplayText.text.Length != 0)
+			{
+				backSpace.OnInteract();
+				yield return new WaitForSeconds(0.1f);
+			}
         }
 		int start = submission ? submissionDisplayText.text.Length : 0;
-		startButton.OnInteract();
+
+		if (!submission)
+		{
+			startButton.OnInteract();
+		}
 		for (int i = start; i < 6; i++)
         {
 			keyboard[getCharIndex(word[i])].OnInteract();
