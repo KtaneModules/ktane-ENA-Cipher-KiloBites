@@ -1124,7 +1124,8 @@ public class enaCipherScript : MonoBehaviour {
 	// Twitch Plays
 
 #pragma warning disable 414
-	private readonly string TwitchHelpMessage = @"!{0} submit [insert answer here] to input your decrypted word. || !{0} cb to enable colorblind mode. || !{0} speed -/+ to increase or decrease speed of the flashing patterns. || !{0} dreambbq to change skin variant to Dream BBQ. Please\n" + "note that once you've done this, you cannot revert back to the original skin!";
+	private readonly string TwitchHelpMessage = "!{0} submit [insert answer here] to input your decrypted word. || !{0} cb to enable colorblind mode. || !{0} speed -/+ to increase or decrease speed of the flashing patterns. || !{0} dreambbq to change skin variant to Dream BBQ. Please\n" + 
+		"note that once you've done this, you cannot revert back to the original skin!";
 #pragma warning restore 414
 
 	private int getCharIndex(char c)
