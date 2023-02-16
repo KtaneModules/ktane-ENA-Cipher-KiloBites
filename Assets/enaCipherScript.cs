@@ -67,7 +67,13 @@ public class enaCipherScript : MonoBehaviour {
 	private bool submission = false;
 	private bool cbActive = false;
 	private bool lessTime;
-	private bool specialSolve;
+
+	private bool specialSolve()
+	{
+		return DateTime.Now.Month == 2 && DateTime.Now.Day == 23;
+	}
+
+
 	private bool disableAllButtons;
 	private bool dreamBBQMode = false;
 	private bool spinning;
@@ -145,7 +151,7 @@ public class enaCipherScript : MonoBehaviour {
 			Debug.LogFormat("[ƎNA Cipher #{0}] Dream BBQ Mode has been activated!", moduleId);
 		}
 
-		if (specialSolve)
+		if (specialSolve())
 		{
 			Debug.LogFormat("[ƎNA Cipher #{0}] The bomb is activated on February 23rd. Happy ENA Day!", moduleId);
 		}
@@ -393,11 +399,6 @@ public class enaCipherScript : MonoBehaviour {
 
 		dreamIx = rnd.Range(0, 2);
 
-		if (DateTime.Now.Month == 2 && DateTime.Now.Day == 23)
-		{
-			specialSolve = true;
-		}
-
 		if (!assignedClip && !Application.isEditor)
 		{
 			assignedClip = PathManager.GetAssets<VideoClip>("ena").Single();
@@ -536,9 +537,9 @@ public class enaCipherScript : MonoBehaviour {
 			var normal = "You have spoken in the language of the Gods! Solved!";
 			var special = "TURRŌN? TURRŌN!? TURRŌN!";
 
-			StartCoroutine(specialSolve ? specialSolveAnimation() : solveAnimation());
+			StartCoroutine(specialSolve() ? specialSolveAnimation() : solveAnimation());
 
-			Debug.LogFormat("[ƎNA Cipher #{0}] {1}", moduleId, specialSolve ? special : normal);
+			Debug.LogFormat("[ƎNA Cipher #{0}] {1}", moduleId, specialSolve() ? special : normal);
         }
         else
         {
