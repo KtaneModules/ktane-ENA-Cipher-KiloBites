@@ -685,6 +685,7 @@ public class enaCipherScript : MonoBehaviour {
 		disableAllButtons = true;
 		Audio.PlaySoundAtTransform("Strike", transform);
 		submissionDisplayText.text = "";
+		submissionText = "";
 		submissionWindow.SetActive(false);
 		yield return new WaitForSeconds(0.15f);
 		taskBar.SetActive(false);
