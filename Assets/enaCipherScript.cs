@@ -402,13 +402,15 @@ public class enaCipherScript : MonoBehaviour {
 		if (!assignedClip && !Application.isEditor)
 		{
 			assignedClip = PathManager.GetAssets<VideoClip>("ena").Single();
-            specialClip = assignedClip;
-            specialSolveOut.clip = specialClip;
+            
         }
-		else
+
+		if (!Application.isEditor)
 		{
-			specialSolveOut.clip = specialClip;
+			specialClip = assignedClip;
 		}
+
+        specialSolveOut.clip = specialClip;
 
 
 
