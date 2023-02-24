@@ -594,7 +594,7 @@ public class enaCipherScript : MonoBehaviour {
         yield return new WaitForSeconds(1);
         screen.material = biosBootupScreenStuff[0];
         yield return new WaitForSeconds(1);
-        screen.material = startupScreen;
+        screen.material = dreamBBQMode ? dreamStartupScreens[dreamIx] : startupScreen;
         shutdownScreen[dreamBBQMode ? 1 : 0].SetActive(true);
         yield return new WaitForSeconds(2);
         shutdownScreen[dreamBBQMode ? 1 : 0].SetActive(false);
