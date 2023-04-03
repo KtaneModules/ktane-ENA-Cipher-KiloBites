@@ -1293,9 +1293,9 @@ public class enaCipherScript : MonoBehaviour {
         {
 			yield return true;
         }
-		if (submission && !word.StartsWith(submissionDisplayText.text))
+		if (submission)
         {
-			while (submissionDisplayText.text.Length != 0)
+			while (!word.StartsWith(submissionDisplayText.text))
 			{
 				backSpace.OnInteract();
 				yield return new WaitForSeconds(0.1f);
