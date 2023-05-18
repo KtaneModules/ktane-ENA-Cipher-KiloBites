@@ -8,6 +8,7 @@ using Words;
 using rnd = UnityEngine.Random;
 using UnityEngine.Video;
 using KeepCoding;
+using System.Reflection;
 
 public class enaCipherScript : MonoBehaviour {
 
@@ -45,6 +46,9 @@ public class enaCipherScript : MonoBehaviour {
 	public TextMesh[] cbTexts;
 	public VideoPlayer specialSolveOut;
 	public VideoClip specialClip;
+	public GameObject[] abyssObj;
+	public TextMesh[] abyssText;
+	public Material staticScreen;
 
 	public Material speedLitLED;
 	public MeshRenderer[] speedLEDS;
@@ -68,10 +72,7 @@ public class enaCipherScript : MonoBehaviour {
 	private bool cbActive = false;
 	private bool lessTime;
 
-	private bool specialSolve()
-	{
-		return DateTime.Now.Month == 2 && DateTime.Now.Day == 23;
-	}
+	private bool specialSolve;
 
 
 	private bool disableAllButtons;
@@ -92,13 +93,10 @@ public class enaCipherScript : MonoBehaviour {
 	private string submissionText;
 	private bool moduleSelected;
 
-	private int[][] encryptedFlashSequence = new int[6][];
-	private int[][] jSubFlashSequence = new int[6][];
-	private int[][] arithmeticKWFlashSequence;
-	private int[][] extinctionFlashSequence = new int[6][];
-	private int[][] temptationKWFlashSequence;
+	private List<int[][]> flashSeqGeneration = new List<int[][]>();
 	private int[] extPairs = new int[6];
 	int[] reversed;
+	private readonly Coroutine[] patternFlashes = new Coroutine[5];
 
 
     private int speedIndex = 2;
@@ -117,7 +115,21 @@ public class enaCipherScript : MonoBehaviour {
 
 	Data data = new Data();
 
+	private string getAbyss()
+	{
+		try
+		{
+			Component gameplayState = GameObject.Find("GameplayState(Clone)").GetComponent("GameplayState");
+			Type type = gameplayState.GetType();
+			FieldInfo fieldMission = type.GetField("MissionToLoad", BindingFlags.Public | BindingFlags.Static);
+			return fieldMission.GetValue(gameplayState).ToString();
+		}
 
+		catch (NullReferenceException)
+		{
+			return "undefined";
+		}
+	}
 
 
 
@@ -129,9 +141,6 @@ public class enaCipherScript : MonoBehaviour {
         {
 			keywords[a] = data.PickWord(3, 8);
         }
-
-		arithmeticKWFlashSequence = new int[keywords[0].Length][];
-		temptationKWFlashSequence = new int[keywords[1].Length][];
 
 		for (int i = 0; i < 6; i++)
         {
@@ -151,7 +160,12 @@ public class enaCipherScript : MonoBehaviour {
 			Debug.LogFormat("[ƎNA Cipher #{0}] Dream BBQ Mode has been activated!", moduleId);
 		}
 
-		if (specialSolve())
+		if ("mod_DansPissionMack_redacted".Equals(getAbyss()))
+		{
+			Debug.LogFormat("[ƎNA Cipher #{0}] ERROR 727: BIOS HAS BEEN CORRUPTED", moduleId);
+		}
+
+		if (specialSolve)
 		{
 			Debug.LogFormat("[ƎNA Cipher #{0}] The bomb is activated on February 23rd. Happy ENA Day!", moduleId);
 		}
@@ -213,12 +227,36 @@ public class enaCipherScript : MonoBehaviour {
 
 		encrypted = currentMessage;
 
-		generatingEncryptedFlashSeq(encrypted);
-        generatingArithmeticKeywordFlashSeq(keywords[0]);
-		generatingExtinctionFlashSeq(reversed.Join("").ToString());
-		generatingTemptationKeywordFlashSeq(keywords[1]);
-		generatingSubFlashSeq(sub);
+		generateSeq();
+
     }
+
+	void generateSeq()
+	{
+		var translation = new[] { encrypted, keywords[0], reversed.Join(""), keywords[1], sub };
+		var seq = new int[translation.Length][][];
+		var stringSeq = new string[translation.Length][];
+
+		for (int i = 0; i < seq.Length; i++)
+		{
+			seq[i] = new int[translation[i].Length][];
+			stringSeq[i] = new string[translation[i].Length];
+			
+			for (int j = 0; j < seq[i].Length; j++)
+			{
+				seq[i][j] = new int[3];
+
+				stringSeq[i][j] = i == 2 ? colorCodeData.generateNumberSequence(translation[i][j]) : colorCodeData.generateLetterSequence(translation[i][j]);
+
+				for (int k = 0; k < 3; k++)
+				{
+					seq[i][j][k] = Int32.Parse(stringSeq[i][j][k].ToString());
+				}
+			}
+			flashSeqGeneration.Add(seq[i]);
+		}
+
+	}
 
 	string encryptTemptationStairway(string key, string word)
     {
@@ -380,6 +418,7 @@ public class enaCipherScript : MonoBehaviour {
 		cbActive = Colorblind.ColorblindModeActive;
         Module.GetComponent<KMSelectable>().OnFocus += delegate { moduleSelected = true; };
         Module.GetComponent<KMSelectable>().OnDefocus += delegate { moduleSelected = false; };
+        specialSolve = DateTime.Now.Month == 2 && DateTime.Now.Day == 23;
     }
 
 	private void OnDestroy()
@@ -416,7 +455,7 @@ public class enaCipherScript : MonoBehaviour {
 
         specialSolveOut.Prepare();
 
-        StartCoroutine(startingScreen());
+		StartCoroutine("mod_DansPissionMack_redacted".Equals(getAbyss()) ? abyssStartingScreen() : startingScreen());
         wordGenerate();
     }
 
@@ -488,11 +527,11 @@ public class enaCipherScript : MonoBehaviour {
 				break;
 		}
 
-        StartCoroutine(flashingEncryptedSequence());
-        StartCoroutine(flashingArithmeticKWSequence());
-        StartCoroutine(flashingExtinctionSequence());
-        StartCoroutine(flashingTemptationKWSequence());
-        StartCoroutine(flashingSubSequence());
+		for (int i = 0; i < 5; i++)
+		{
+			patternFlashes[i] = StartCoroutine(flashSeq(i, flashSeqGeneration[i], i == 2));
+		}
+
     }
 
 	void keyPress(KMSelectable letter)
@@ -538,10 +577,11 @@ public class enaCipherScript : MonoBehaviour {
         {
 			var normal = "You have spoken in the language of the Gods! Solved!";
 			var special = "TURRŌN? TURRŌN!? TURRŌN!";
+			var abyss = "DARKNESS IS NOW COMPLETED.";
 
-			StartCoroutine(specialSolve() ? specialSolveAnimation() : solveAnimation());
+			StartCoroutine("mod_DansPissionMack_redacted".Equals(getAbyss()) ? abyssSolve() : specialSolve ? specialSolveAnimation() : solveAnimation());
 
-			Debug.LogFormat("[ƎNA Cipher #{0}] {1}", moduleId, specialSolve() ? special : normal);
+			Debug.LogFormat("[ƎNA Cipher #{0}] {1}", moduleId, "mod_DansPissionMack_redacted".Equals(getAbyss()) ? abyss : specialSolve ? special : normal);
         }
         else
         {
@@ -603,7 +643,7 @@ public class enaCipherScript : MonoBehaviour {
         screen.material = biosBootupScreenStuff[0];
         if (!lessTime)
         {
-            Module.GetComponent<KMBombModule>().HandlePass();
+            Module.HandlePass();
 			moduleSolved = true;
         }
 
@@ -674,7 +714,7 @@ public class enaCipherScript : MonoBehaviour {
 		if (!lessTime)
         {
 			moduleSolved = true;
-			Module.GetComponent<KMBombModule>().HandlePass();
+			Module.HandlePass();
 		}
 
 
@@ -694,18 +734,17 @@ public class enaCipherScript : MonoBehaviour {
 		screen.material = bsodScreen;
 		blueScreenMessage.SetActive(true);
 		yield return new WaitForSeconds(1.5f);
-		Module.GetComponent<KMBombModule>().HandleStrike();
+		Module.HandleStrike();
 		blueScreenMessage.SetActive(false);
 		screen.material = backgroundScreen;
 		window.SetActive(true);
 		taskBar.SetActive(true);
 		disableAllButtons = false;
 		yield return new WaitForSeconds(1);
-		StartCoroutine(flashingEncryptedSequence());
-		StartCoroutine(flashingArithmeticKWSequence());
-		StartCoroutine(flashingExtinctionSequence());
-		StartCoroutine(flashingTemptationKWSequence());
-		StartCoroutine(flashingSubSequence());
+		for (int i = 0; i < 5; i++)
+		{
+			patternFlashes[i] = StartCoroutine(flashSeq(i, flashSeqGeneration[i], i == 2));
+		}
 
 	}
 
@@ -754,13 +793,193 @@ public class enaCipherScript : MonoBehaviour {
 		Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.TitleMenuPressed, transform);
 		window.SetActive(true);
 		yield return new WaitForSeconds(1);
-		StartCoroutine(flashingEncryptedSequence());
-		StartCoroutine(flashingArithmeticKWSequence());
-		StartCoroutine(flashingExtinctionSequence());
-		StartCoroutine(flashingTemptationKWSequence());
-		StartCoroutine(flashingSubSequence());
+		for (int i = 0; i < 5; i++)
+		{
+			patternFlashes[i] = StartCoroutine(flashSeq(i, flashSeqGeneration[i], i == 2));
+		}
 		yield return null;
 	}
+
+	IEnumerator abyssStartingScreen()
+	{
+		Coroutine staticScreenStuff;
+		var errorStuff = new[] { "ERROR CODE 727:", "BIOS HAS BEEN CORRUPTED", "PLEASE CONTACT 凶凶凶凶凶凶凶凶凶凶凶凶" };
+        taskBar.SetActive(false);
+        window.SetActive(false);
+        submissionWindow.SetActive(false);
+        specialWindow.SetActive(false);
+		foreach (var obj in abyssObj)
+		{
+			obj.SetActive(false);
+		}
+		foreach (var text in abyssText)
+		{
+			text.text = "";
+		}
+
+		if (_enaCipherId == 1)
+		{
+            Audio.PlaySoundAtTransform("ShortStartup", transform);
+        }
+        yield return new WaitForSeconds(2);
+		abyssObj[3].SetActive(true);
+		screen.material = biosBootupScreenStuff[1];
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < errorStuff[i].Length; j++)
+			{
+				abyssText[1].text += errorStuff[i][j].ToString();
+				yield return new WaitForSeconds(0.03f);
+			}
+			yield return new WaitForSeconds(i != 2 ? 2 : 0.01f);
+			if (i != 2)
+			{
+                abyssText[1].text += "\n";
+            }
+        }
+		abyssObj[3].SetActive(false);
+        abyssObj[0].SetActive(true);
+        if (_enaCipherId == 1)
+			Audio.PlaySoundAtTransform("AbyssStatic", transform);
+		staticScreenStuff = StartCoroutine(changeStatic());
+		abyssText[0].text = "HELLO\nDANIELSTIGMAN";
+		abyssText[0].color = new Color32(230, 230, 230, 255);
+		yield return new WaitForSeconds(0.979f);
+		StopCoroutine(staticScreenStuff);
+        screen.material = biosBootupScreenStuff[0];
+		abyssText[0].text = "";
+		if (_enaCipherId == 1)
+            Audio.PlaySoundAtTransform("AbyssStart", transform);
+		yield return new WaitForSeconds(1);
+		screen.material = biosBootupScreenStuff[1];
+		yield return new WaitForSeconds(1);
+		abyssText[0].color = Color.white;
+		abyssText[0].text = "NO NEED TO WORRY ABOUT THE DARK";
+		yield return new WaitForSeconds(3.8f);
+		abyssText[0].text = "";
+		abyssObj[1].SetActive(true);
+		yield return new WaitForSeconds(0.4f);
+		abyssObj[1].SetActive(false);
+		abyssText[0].text = "FOR I AM THE DARKNESS ITSELF";
+		yield return new WaitForSeconds(4.2f);
+		abyssText[0].text = "CLOUD VII.ENA HAS LOADED SUCCESSFULLY\nPREPARE FOR DARKNESS";
+		yield return new WaitForSeconds(0.35f);
+		for (int i = 0; i < 2; i++)
+		{
+			abyssObj[i == 0 ? 2 : 4].SetActive(true);
+			yield return new WaitForSeconds(0.35f);
+		}
+		for (int i = 0; i < 2; i++)
+		{
+			abyssObj[i == 0 ? 2 : 4].SetActive(false);
+		}
+		screen.material = biosBootupScreenStuff[2];
+		Coroutine[] funnyScreenThings = new Coroutine[2];
+
+		for (int i = 0; i < 2; i++)
+		{
+			funnyScreenThings[i] = StartCoroutine(i == 0 ? screenFlicker() : randomTextStuff());
+		}
+		yield return new WaitForSeconds(11);
+		foreach (var c in funnyScreenThings)
+		{
+			StopCoroutine(c);
+		}
+		abyssObj[1].SetActive(false);
+        startIcon.material = dreamBBQMode ? startIcons[1] : startIcons[0];
+        taskBar.SetActive(true);
+		window.SetActive(true);
+		screen.material = backgroundScreen;
+		isActivated = true;
+		yield return new WaitForSeconds(1);
+        for (int i = 0; i < 5; i++)
+        {
+            patternFlashes[i] = StartCoroutine(flashSeq(i, flashSeqGeneration[i], i == 2));
+        }
+
+    }
+
+	IEnumerator screenFlicker()
+	{
+		screen.material = biosBootupScreenStuff[2];
+		while (true)
+		{
+			var flickerRange = rnd.Range(0f, 0.5f);
+			screen.material.color = new Color(flickerRange, flickerRange, flickerRange);
+			yield return new WaitForSeconds(rnd.Range(0.01f, 0.08f));
+		}
+	}
+
+	IEnumerator abyssSolve()
+	{
+		disableAllButtons = true;
+		Audio.PlaySoundAtTransform("AbyssSolve", transform);
+		submissionWindow.SetActive(false);
+		taskBar.SetActive(false);
+		var funny = new Coroutine[2];
+        abyssObj[0].SetActive(true);
+        for (int i = 0; i < 2; i++)
+		{
+			funny[i] = StartCoroutine(i == 0 ? screenFlicker() : randomTextStuff());
+		}
+		yield return new WaitForSeconds(0.7f);
+		foreach (var c in funny)
+		{
+			StopCoroutine(c);
+		}
+        abyssObj[1].SetActive(false);
+        screen.material = bsodScreen;
+		abyssText[0].text = "THE DARKNESS IS NOW COMPLETE";
+		yield return new WaitForSeconds(1.5f);
+		for (int i = 0; i < 2; i++)
+		{
+			funny[i] = StartCoroutine(i == 0 ? changeStatic() : randomTextStuff());
+		}
+		yield return new WaitForSeconds(1.5f);
+		StopCoroutine(funny[1]);
+		abyssText[0].text = "";
+		abyssObj[1].SetActive(false);
+		yield return new WaitForSeconds(0.7f);
+		StopCoroutine(funny[0]);
+		screen.material = biosBootupScreenStuff[0];
+
+		yield return new WaitForSeconds(1.7f);
+		moduleSolved = true;
+		Module.HandlePass();
+	}
+
+	IEnumerator randomTextStuff()
+	{
+		var randomThings = new[] { "LIMITS ARE MEANT TO BE BROKEN", "FINISHING TOUCH", "DARKNESS AWAITS", "WHEN YOU SEE IT", "THE SWORD SHALL SET YOU FREE", "CONSUME THE DARKNESS", "CROSS SLASH", "THERE'S NOWHERE LEFT TO RUN", "ONE WINGED ANGEL", "BREAK THE LIMITS" };
+
+		int random = Enumerable.Range(0, randomThings.Length).PickRandom();
+		int prev;
+
+		while (true)
+		{
+            abyssObj[1].SetActive(false);
+            abyssText[0].text = randomThings[random];
+			prev = random;
+			yield return new WaitForSeconds(rnd.Range(0.04f, 0.2f));
+            abyssText[0].text = "";
+			random = Enumerable.Range(0, randomThings.Length).Where(x => x != prev).PickRandom();
+			abyssObj[1].SetActive(rnd.Range(0, 2) == 1 ? true : false);
+			yield return new WaitForSeconds(rnd.Range(0.4f, 0.6f));
+        }
+	}
+
+	IEnumerator changeStatic()
+	{
+        
+        while (true)
+		{
+            screen.material = staticScreen;
+            screen.material.SetTextureOffset("_MainTex", new Vector2(rnd.Range(0f, 1f), rnd.Range(0f, 1f)));
+			yield return null;
+		}
+	}
+
+
 
 
 
@@ -772,8 +991,16 @@ public class enaCipherScript : MonoBehaviour {
 		window.SetActive(false);
 		submissionWindow.SetActive(false);
 		specialWindow.SetActive(false);
+        foreach (var obj in abyssObj)
+        {
+            obj.SetActive(false);
+        }
+        foreach (var text in abyssText)
+        {
+            text.text = "";
+        }
 
-		yield return null;
+        yield return null;
 		if (_enaCipherId == 1)
 			Audio.PlaySoundAtTransform("BiosStartup", transform);
 		yield return new WaitForSeconds(4);
@@ -819,272 +1046,39 @@ public class enaCipherScript : MonoBehaviour {
 		startIcon.material = dreamBBQMode ? startIcons[1] : startIcons[0];
 		taskBar.SetActive(true);
 		yield return new WaitForSeconds(1);
-		window.SetActive(true);
-		isActivated = true;
+		window.SetActive(true);	
 		yield return new WaitForSeconds(1);
-		StartCoroutine(flashingEncryptedSequence());
-		StartCoroutine(flashingArithmeticKWSequence());
-		StartCoroutine(flashingExtinctionSequence());
-		StartCoroutine(flashingTemptationKWSequence());
-		StartCoroutine(flashingSubSequence());
-	}
-
-	void generatingEncryptedFlashSeq(string word)
-    {
-
-        string[] sequences = new string[word.Length];
-		char[] letters = word.ToCharArray();
-
-		for (int i = 0; i < word.Length; i++)
+		isActivated = true;
+        for (int i = 0; i < 5; i++)
         {
-            char[][] num = new char[sequences.Length][];
-			num[i] = new char[3];
-			encryptedFlashSequence[i] = new int[3];
-			sequences[i] = colorCodeData.generateLetterSequence(letters[i]);
-			
-			for (int j = 0; j < 3; j++)
-            {
-				num[i][j] = sequences[i].ToCharArray()[j];
-				encryptedFlashSequence[i][j] = num[i][j] - '0';
-
-			}
-			
-        }	
-    }
-
-	void generatingArithmeticKeywordFlashSeq(string kw)
-    {
-		string[] sequences = new string[kw.Length];
-		char[] letters = kw.ToCharArray();
-
-		for (int i = 0; i < kw.Length; i++)
-        {
-			char[][] num = new char[sequences.Length][];
-            num[i] = new char[3];
-			arithmeticKWFlashSequence[i] = new int[3];
-			sequences[i] = colorCodeData.generateLetterSequence(letters[i]);
-
-			for (int j = 0; j < 3; j++)
-            {
-				num[i][j] = sequences[i].ToCharArray()[j];
-				arithmeticKWFlashSequence[i][j] = num[i][j] - '0';
-            }
+            patternFlashes[i] = StartCoroutine(flashSeq(i, flashSeqGeneration[i], i == 2));
         }
     }
 
-	void generatingExtinctionFlashSeq(string numbers)
-    {
-		string[] sequences = new string[numbers.Length];
-        char[] digits = numbers.ToCharArray();
-
-		for (int i = 0; i < numbers.Length; i++)
-        {
-			char[][] num = new char[sequences.Length][];
-			num[i] = new char[3];
-			extinctionFlashSequence[i] = new int[3];
-			sequences[i] = colorCodeData.generateNumberSequence(digits[i]);
-
-			for (int j = 0; j < 3; j++)
-            {
-				num[i][j] = sequences[i].ToCharArray()[j];
-				extinctionFlashSequence[i][j] = num[i][j] - '0';
-            }
-        }
-	}
-
-	void generatingTemptationKeywordFlashSeq(string kw)
-    {
-		string[] sequences = new string[kw.Length];
-		char[] letters = kw.ToCharArray();
-
-		for (int i = 0; i < kw.Length; i++)
-        {
-			char[][] num = new char[sequences.Length][];
-			num[i] = new char[3];
-			temptationKWFlashSequence[i] = new int[3];
-			sequences[i] = colorCodeData.generateLetterSequence(letters[i]);
-
-			for (int j = 0; j < 3; j++)
-            {
-				num[i][j] = sequences[i].ToCharArray()[j];
-				temptationKWFlashSequence[i][j] = num[i][j] - '0';
-            }
-        }
-    }
-
-	void generatingSubFlashSeq(string jSub)
-    {
-		string[] sequences = new string[jSub.Length];
-		char[] letters = jSub.ToCharArray();
-
-		for (int i = 0; i < jSub.Length; i++)
-        {
-			char[][] num = new char[sequences.Length][];
-			num[i] = new char[3];
-			jSubFlashSequence[i] = new int[3];
-			sequences[i] = colorCodeData.generateLetterSequence(letters[i]);
-
-			for (int j = 0; j < 3; j++)
-            {
-				num[i][j] = sequences[i].ToCharArray()[j];
-				jSubFlashSequence[i][j] = num[i][j] - '0';
-            }
-        }
-    }
-
-	IEnumerator flashingEncryptedSequence()
-    {
+	IEnumerator flashSeq(int pos, int[][] seq, bool ext)
+	{
 		yield return null;
 
-		int letterPos = 0;
-		int letterFlashPos = 0;
-
-		while (!moduleSolved)
-        {
-			letterPos = 0;
-			letterFlashPos = 0;
-			while (letterPos != word.Length)
-            {
-				while (letterFlashPos < 3)
-                {
-					seqDisplays[0].material = dreamBBQMode ? dreamLetterPatterns[encryptedFlashSequence[letterPos][letterFlashPos]] : letterPatterns[encryptedFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[0].text = cbActive && dreamBBQMode ? mainDreamCB[encryptedFlashSequence[letterPos][letterFlashPos]] : cbActive ? mainCB[encryptedFlashSequence[letterPos][letterFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-					seqDisplays[0].material = biosBootupScreenStuff[0];
-					cbTexts[0].text = "";
-					letterFlashPos++;
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-                }
-				letterPos++;
-				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
-            }
-			yield return new WaitForSeconds(1);
-        }
-    }
-
-	IEnumerator flashingArithmeticKWSequence()
-    {
-		yield return null;
-
-		int letterPos = 0;
-		int letterFlashPos = 0;
-
-		while (!moduleSolved)
+		while (true)
 		{
-			letterPos = 0;
-			letterFlashPos = 0;
-			while (letterPos != keywords[0].Length)
+			for (int i = 0; i < seq.Length; i++)
 			{
-				while (letterFlashPos < 3)
+				for (int j = 0; j < 3; j++)
 				{
-					seqDisplays[1].material = dreamBBQMode ? dreamLetterPatterns[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : letterPatterns[arithmeticKWFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[1].text = cbActive && dreamBBQMode ? mainDreamCB[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : cbActive? mainCB[arithmeticKWFlashSequence[letterPos][letterFlashPos]] : "";
+					seqDisplays[pos].material = ext && dreamBBQMode ? dreamNumberPatterns[seq[i][j]] :
+						dreamBBQMode ? dreamLetterPatterns[seq[i][j]] : ext ? numberPatterns[seq[i][j]] : letterPatterns[seq[i][j]];
+					cbTexts[pos].text = cbActive && ext && dreamBBQMode ? numDreamCB[seq[i][j]] :
+						cbActive && dreamBBQMode ? mainDreamCB[seq[i][j]] : cbActive && ext ? numCB[seq[i][j]] : cbActive ? mainCB[seq[i][j]] : "";
 					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-					seqDisplays[1].material = biosBootupScreenStuff[0];
-					cbTexts[1].text = "";
-					letterFlashPos++;
+					seqDisplays[pos].material = biosBootupScreenStuff[0];
+					cbTexts[pos].text = "";
 					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
 				}
-				letterPos++;
-				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
-			}
+                yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
+            }
 			yield return new WaitForSeconds(1);
 		}
 	}
-
-	IEnumerator flashingExtinctionSequence()
-    {
-		yield return null;
-
-		int numberPos = 0;
-		int numberFlashPos = 0;
-
-		while (!moduleSolved)
-        {
-			numberPos = 0;
-			numberFlashPos = 0;
-			while (numberPos != extPairs.Length)
-            {
-				while (numberFlashPos < 3)
-                {
-					seqDisplays[2].material = dreamBBQMode ? dreamNumberPatterns[extinctionFlashSequence[numberPos][numberFlashPos]] : numberPatterns[extinctionFlashSequence[numberPos][numberFlashPos]];
-					cbTexts[2].text = cbActive && dreamBBQMode ? numDreamCB[extinctionFlashSequence[numberPos][numberFlashPos]] : cbActive ? numCB[extinctionFlashSequence[numberPos][numberFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-					seqDisplays[2].material = biosBootupScreenStuff[0];
-					cbTexts[2].text = "";
-					numberFlashPos++;
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-                }
-				numberPos++;
-				numberFlashPos = 0;
-				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
-            }
-			yield return new WaitForSeconds(1);
-        }
-    }
-
-	IEnumerator flashingTemptationKWSequence()
-    {
-		yield return null;
-
-		int letterPos = 0;
-		int letterFlashPos = 0;
-
-		while (!moduleSolved)
-		{
-			letterPos = 0;
-			letterFlashPos = 0;
-			while (letterPos != keywords[1].Length)
-			{
-				while (letterFlashPos < 3)
-				{
-					seqDisplays[3].material = dreamBBQMode ? dreamLetterPatterns[temptationKWFlashSequence[letterPos][letterFlashPos]] : letterPatterns[temptationKWFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[3].text = cbActive && dreamBBQMode ? mainDreamCB[temptationKWFlashSequence[letterPos][letterFlashPos]] : cbActive ? mainCB[temptationKWFlashSequence[letterPos][letterFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-					seqDisplays[3].material = biosBootupScreenStuff[0];
-					cbTexts[3].text = "";
-					letterFlashPos++;
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-				}
-				letterPos++;
-				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
-			}
-			yield return new WaitForSeconds(1);
-		}
-	}
-
-	IEnumerator flashingSubSequence()
-    {
-		yield return null;
-		int letterPos = 0;
-		int letterFlashPos = 0;
-
-        while (!moduleSolved)
-        {
-			letterPos = 0;
-			letterFlashPos = 0;
-			while (letterPos != sub.Length)
-            {
-				while (letterFlashPos < 3)
-                {
-					seqDisplays[4].material =  dreamBBQMode ? dreamLetterPatterns[jSubFlashSequence[letterPos][letterFlashPos]] : letterPatterns[jSubFlashSequence[letterPos][letterFlashPos]];
-					cbTexts[4].text = cbActive && dreamBBQMode ? mainDreamCB[jSubFlashSequence[letterPos][letterFlashPos]] : cbActive ? mainCB[jSubFlashSequence[letterPos][letterFlashPos]] : "";
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-					seqDisplays[4].material = biosBootupScreenStuff[0];
-					cbTexts[4].text = "";
-					letterFlashPos++;
-					yield return new WaitForSeconds(0.3f / (1 + (0.1f * speed)));
-                }
-				letterPos++;
-				letterFlashPos = 0;
-				yield return new WaitForSeconds(0.7f / (1 + (0.1f * speed)));
-            }
-			yield return new WaitForSeconds(1);
-        }
-    }
 
 
 	
@@ -1248,11 +1242,10 @@ public class enaCipherScript : MonoBehaviour {
             window.SetActive(true);
             yield return new WaitForSeconds(1);
             isActivated = true;
-            StartCoroutine(flashingEncryptedSequence());
-            StartCoroutine(flashingArithmeticKWSequence());
-            StartCoroutine(flashingExtinctionSequence());
-            StartCoroutine(flashingTemptationKWSequence());
-            StartCoroutine(flashingSubSequence());
+			for (int i = 0; i < 5; i++)
+			{
+
+			}
             yield break;
         }
 
