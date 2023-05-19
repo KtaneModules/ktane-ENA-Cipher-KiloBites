@@ -829,9 +829,9 @@ public class enaCipherScript : MonoBehaviour {
 			for (int j = 0; j < errorStuff[i].Length; j++)
 			{
 				abyssText[1].text += errorStuff[i][j].ToString();
-				yield return new WaitForSeconds(0.03f);
+				yield return new WaitForSeconds(0.05f);
 			}
-			yield return new WaitForSeconds(i != 2 ? 2 : 0.01f);
+			yield return new WaitForSeconds(i != 2 ? 5 : 0.01f);
 			if (i != 2)
 			{
                 abyssText[1].text += "\n";
